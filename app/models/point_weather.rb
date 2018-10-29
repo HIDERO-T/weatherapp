@@ -3,33 +3,48 @@
 # 初期化時にデータフェッチするため、new時に例外処理必要。
 # 
 class PointWeather
-  API_EP = "https://api.darksky.net/forecast/488f576ad99a5b57174456137ebd93c8/"
+  API_EP = "https://api.darksky.net/forecast/"
   attr_reader :daily, :hourly, :yesterday
+  class APIKeyError < StandardError; end
+  class APIResponseError < StandardError; end
+
+  class << self
+    attr_writer :api_key
+    
+    def base_url
+      API_EP + @api_key + '/'
+    end
+  end
 
   def initialize(lat, lon)
-    current = fetch_current(lat, lon)
-    yesterday = fetch_yesterday(lat, lon)
+    current_json = download_from_api(lat, lon)
+    json_daily = current_json['daily']['data']
+    json_hourly = current_json['hourly']['data']
 
-    json_daily = current['daily']['data']
-    json_hourly = current['hourly']['data']
+    time_serial = Time.mktime(Time.now.year, Time.now.month, Time.now.day - 1).to_i
+    past_json = download_from_api(lat, lon, time_serial)
+    json_yesterday = past_json['daily']['data'].select{|rec| rec['time'].to_i == time_serial}.first
 
     @daily = (0..6).map{|i| Daily.new(json_daily[i])}
     @hourly = (0..7).map{|i| Hourly.new(json_hourly[i*6])}
-    @yesterday = Daily.new(yesterday)
+    @yesterday = Daily.new(json_yesterday)
   end
 
   private
-  def fetch_current(lat, lon)
-    return JSON.parse(Faraday.get("#{API_EP}#{lat},#{lon}", {'units' => 'si'}).body)
-  end
-
-  def fetch_yesterday(lat, lon)
-    time_serial = Time.mktime(Time.now.year, Time.now.month, Time.now.day - 1).to_i
-    whole = Faraday.get "#{API_EP}#{lat},#{lon},#{time_serial.to_s}", {'units' => 'si', 'exclue' => 'hourly'}
-    res = JSON.parse(whole.body)['daily']['data']
-    res.each do |rec|
-      return rec if rec['time'].to_i == time_serial
+  def download_from_api(lat, lon, time_serial = nil)
+    raw = if time_serial
+      Faraday.get("#{self.class.base_url}#{lat},#{lon},#{time_serial.to_s}", {'units' => 'si', 'exclue' => 'hourly'}).body
+    else
+      Faraday.get("#{self.class.base_url}#{lat},#{lon}", {'units' => 'si'}).body
     end
+
+    raise APIKeyError.new("API Key is invalid.") if /.*Forbidden.*/ === raw
+    raise APIKeyError.new("API Key is not set.") if /.*Not\sFound.*/ === raw
+
+    json = JSON.parse(raw)
+    raise APIResponseError.new("fetch_yesterday: #{json['error']}.") if json['error']
+
+    return json
   end
 
   #
@@ -57,4 +72,5 @@ class PointWeather
       @min = "#{json['temperatureLow'].round(1)}℃"
     end
   end
+
 end
