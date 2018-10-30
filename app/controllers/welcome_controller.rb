@@ -24,7 +24,7 @@ class WelcomeController < ApplicationController
 
   def redirect
     (@pref, @city) = GeoService.dist_from_coord(params[:lat].to_f, params[:lon].to_f)
-    index
+    redirect_to "/#{@pref}/#{@city}"
   end
 end
 
