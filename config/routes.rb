@@ -1,10 +1,7 @@
 Rails.application.routes.draw do
-  get 'welcome/index' => redirect("/city/")
-
   root 'welcome#index'
-  get '/city,:p,:c' => 'welcome#index'
-  get '/coord,:lat,:lon' => 'welcome#redirect' , :constraints => {:lat=>/[0-9.]+/, :lon=>/[0-9.]+/}
+  get '/coord' => 'welcome#redirect' 
   
-
-  # For details on the DSL available within this file, see http://guides.rubyonrails.org/routing.html
+  #NOTE: This routing must be at last. Many routings will conflict with this.
+  get '/:p/:c' => 'welcome#index'
 end

@@ -29,15 +29,15 @@ $(function() {
   });
 
   $('#c').change(function() {
-    if (c.value != '未選択') {window.location.href='./city,' + p.value + ',' + c.value;} 
+    if (c.value != '未選択') {window.location.href='/' + p.value + '/' + c.value;} 
   });
 
   $("#loc").click(function() {
     if ( navigator.geolocation ){
         navigator.geolocation.getCurrentPosition(
         function(position){
-          coord = position.coords.latitude + ',' + position.coords.longitude;
-          window.location.href='../coord,' + coord;
+          coord = '?lat=' + position.coords.latitude + '&lon=' + position.coords.longitude;
+          window.location.href='/coord' + coord;
         },
         function(err){
           window.alert("位置情報が取得できませんでした。\n(" + err.code + "," + err.message + ")");
