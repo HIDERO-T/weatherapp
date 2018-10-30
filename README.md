@@ -14,3 +14,7 @@ rails s
 ## Environment
 * Ruby v2.3.1
 * Rails v5.1.6
+## Attention
+* To enable SSH connection, certification key and secret files must be prepared before running.
+* If not use SSH, modify config/puma.rb to delete SSH function.
+* API key is needed before runnning.
